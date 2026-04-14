@@ -2,127 +2,72 @@ import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-// ── MBody AI brand palette ────────────────────────────────────────────────────
-// Source: mbody.ai — deep navy background, crisp white text, electric cyan accent
 const C = {
-  bg:       "#050a12",   // near-black navy (site background)
-  surface:  "#0c1524",   // slightly lighter panel
-  card:     "#101d30",   // card background
-  border:   "#1a2e47",   // subtle border
-  accent:   "#4fc3f7",   // electric cyan (matches site CTA color)
-  accentDim:"#0288d1",   // deeper cyan for gradients
-  good:     "#22c55e",   // green — pass / good
-  monitor:  "#f59e0b",   // amber — monitor
-  attention:"#ef4444",   // red — attention / fail
-  text:     "#e8f0fe",   // near-white body text
-  muted:    "#5c7a99",   // muted secondary text
-  white:    "#ffffff",
+  bg:"#050a12", surface:"#0c1524", card:"#101d30", border:"#1a2e47",
+  accent:"#4fc3f7", accentDim:"#0288d1", good:"#22c55e", monitor:"#f59e0b",
+  attention:"#ef4444", text:"#e8f0fe", muted:"#5c7a99", white:"#ffffff",
 };
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:${C.bg};font-family:'Inter',sans-serif;color:${C.text};}
-  .app{min-height:100vh;padding-bottom:80px;}
-
-  /* ── Header ── */
-  .header{
-    background:${C.bg};
-    border-bottom:1px solid ${C.border};
-    padding:14px 20px;
-    position:sticky;top:0;z-index:100;
-  }
+  .app{min-height:100vh;padding-bottom:90px;}
+  .header{background:${C.bg};border-bottom:1px solid ${C.border};padding:14px 20px;position:sticky;top:0;z-index:100;}
   .header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
-  .logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
-  .logo-mark{
-    width:34px;height:34px;border-radius:8px;
-    background:linear-gradient(135deg,${C.accentDim},${C.accent});
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#000;
-    letter-spacing:-0.5px;flex-shrink:0;
-  }
-  .logo-text{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:${C.white};letter-spacing:0.5px;}
+  .logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .logo-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,${C.accentDim},${C.accent});display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#000;flex-shrink:0;}
+  .logo-text{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:${C.white};}
   .logo-text span{color:${C.accent};}
   .logo-sub{font-size:10px;color:${C.muted};letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
   .step-badge{background:${C.surface};border:1px solid ${C.border};color:${C.accent};font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;}
 
-  /* ── Layout ── */
+  /* Bottom nav */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:${C.surface};border-top:1px solid ${C.border};display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+  .nav-btn{flex:1;padding:12px 8px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:${C.muted};transition:color .2s;}
+  .nav-btn.active{color:${C.accent};}
+  .nav-icon{font-size:20px;line-height:1;}
+  .nav-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;}
+  .nav-badge{background:${C.attention};color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+
   .content{max-width:700px;margin:0 auto;padding:20px 16px;}
-  .sec{
-    font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;
-    letter-spacing:3px;text-transform:uppercase;color:${C.accent};
-    margin:26px 0 10px;display:flex;align-items:center;gap:8px;
-  }
+  .sec{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${C.accent};margin:26px 0 10px;display:flex;align-items:center;gap:8px;}
   .sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,${C.accent}50,transparent);}
   .card{background:${C.card};border:1px solid ${C.border};border-radius:12px;padding:18px;margin-bottom:10px;}
-
-  /* ── Form fields ── */
   .fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
   .fl{display:flex;flex-direction:column;gap:5px;}
   .fl label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:${C.muted};}
-  .fl input{background:${C.surface};border:1px solid ${C.border};color:${C.text};padding:10px 13px;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
-  .fl input:focus{border-color:${C.accent};}
+  .fl input,.fl select{background:${C.surface};border:1px solid ${C.border};color:${C.text};padding:10px 13px;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+  .fl input:focus,.fl select:focus{border-color:${C.accent};}
+  .fl select option{background:${C.surface};}
+  .fl.full{grid-column:1/-1;}
 
-  /* ── Inspection rows ── */
   .irow{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid ${C.border}25;gap:10px;}
   .irow:last-child{border-bottom:none;}
   .rlabel{flex:1;font-size:13px;color:${C.text};}
   .rg{display:flex;gap:5px;}
-  .rb{
-    display:flex;align-items:center;justify-content:center;
-    padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;
-    cursor:pointer;border:1.5px solid ${C.border};background:transparent;
-    color:${C.muted};transition:all .15s;user-select:none;min-width:36px;
-  }
+  .rb{display:flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${C.border};background:transparent;color:${C.muted};transition:all .15s;user-select:none;min-width:36px;}
   .rb.g{background:${C.good}18;border-color:${C.good};color:${C.good};}
   .rb.m{background:${C.monitor}18;border-color:${C.monitor};color:${C.monitor};}
   .rb.a{background:${C.attention}18;border-color:${C.attention};color:${C.attention};}
-  .ni{
-    background:${C.surface};border:1px solid ${C.border};color:${C.text};
-    padding:7px 10px;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;
-    outline:none;width:120px;flex-shrink:0;transition:border-color .2s;
-  }
+  .ni{background:${C.surface};border:1px solid ${C.border};color:${C.text};padding:7px 10px;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;outline:none;width:110px;flex-shrink:0;}
   .ni::placeholder{color:${C.muted};}
   .ni:focus{border-color:${C.accent};}
 
-  /* ── Machine tabs ── */
   .tabs{display:flex;gap:8px;margin-bottom:18px;}
-  .tab{
-    flex:1;padding:11px;text-align:center;border-radius:10px;
-    font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;
-    letter-spacing:1px;cursor:pointer;border:2px solid ${C.border};
-    background:transparent;color:${C.muted};transition:all .2s;
-  }
+  .tab{flex:1;padding:11px;text-align:center;border-radius:10px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;border:2px solid ${C.border};background:transparent;color:${C.muted};transition:all .2s;}
   .tab.on{border-color:${C.accent};color:${C.accent};background:${C.accent}12;}
 
-  /* ── Battery grid ── */
   .bg{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .bf{display:flex;flex-direction:column;gap:4px;}
   .bf label{font-size:10px;color:${C.muted};text-transform:uppercase;letter-spacing:1px;font-weight:600;}
-  .bf input{
-    background:${C.surface};border:1px solid ${C.border};color:${C.accent};
-    padding:10px 13px;border-radius:8px;font-size:18px;
-    font-family:'Space Grotesk',sans-serif;font-weight:700;outline:none;text-align:center;
-    transition:border-color .2s;
-  }
-  .bf input:focus{border-color:${C.accent};}
+  .bf input{background:${C.surface};border:1px solid ${C.border};color:${C.accent};padding:10px 13px;border-radius:8px;font-size:18px;font-family:'Space Grotesk',sans-serif;font-weight:700;outline:none;text-align:center;}
 
-  /* ── Textarea ── */
-  textarea{
-    background:${C.surface};border:1px solid ${C.border};color:${C.text};
-    padding:12px 13px;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;
-    outline:none;width:100%;resize:vertical;min-height:90px;transition:border-color .2s;
-  }
+  textarea{background:${C.surface};border:1px solid ${C.border};color:${C.text};padding:12px 13px;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;width:100%;resize:vertical;min-height:80px;}
   textarea:focus{border-color:${C.accent};}
 
-  /* ── Status selectors ── */
   .ss{display:flex;gap:8px;}
-  .sb{
-    flex:1;padding:10px;text-align:center;border-radius:8px;
-    font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;
-    letter-spacing:1px;cursor:pointer;border:2px solid ${C.border};
-    background:transparent;color:${C.muted};transition:all .2s;
-  }
+  .sb{flex:1;padding:10px;text-align:center;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;border:2px solid ${C.border};background:transparent;color:${C.muted};transition:all .2s;}
   .sb.sg{border-color:${C.good};color:${C.good};background:${C.good}12;}
   .sb.sm{border-color:${C.monitor};color:${C.monitor};background:${C.monitor}12;}
   .sb.sa{border-color:${C.attention};color:${C.attention};background:${C.attention}12;}
@@ -131,51 +76,39 @@ const css = `
   .sb.sme{border-color:${C.monitor};color:${C.monitor};background:${C.monitor}12;}
   .sb.sh{border-color:${C.attention};color:${C.attention};background:${C.attention}12;}
 
-  /* ── Buttons ── */
-  .btn{
-    width:100%;padding:15px;
-    background:linear-gradient(135deg,${C.accent},${C.accentDim});
-    border:none;border-radius:10px;color:#000;
-    font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
-    letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:18px;
-    transition:opacity .2s;
-  }
-  .btn:hover{opacity:.88;}
+  .btn{width:100%;padding:15px;background:linear-gradient(135deg,${C.accent},${C.accentDim});border:none;border-radius:10px;color:#000;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:18px;}
   .btn:disabled{opacity:.35;cursor:not-allowed;}
-  .btn2{
-    width:100%;padding:12px;background:transparent;
-    border:1.5px solid ${C.border};border-radius:10px;color:${C.muted};
-    font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
-    letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;
-    transition:all .2s;
-  }
+  .btn2{width:100%;padding:12px;background:transparent;border:1.5px solid ${C.border};border-radius:10px;color:${C.muted};font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;}
   .btn2:hover{border-color:${C.accent}50;color:${C.accent};}
-  .btn-pdf{
-    width:100%;padding:15px;
-    background:linear-gradient(135deg,${C.good},#16a34a);
-    border:none;border-radius:10px;color:#000;
-    font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;
-    letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:10px;
-    transition:opacity .2s;
-  }
-  .btn-pdf:hover{opacity:.88;}
+  .btn-pdf{width:100%;padding:15px;background:linear-gradient(135deg,${C.good},#16a34a);border:none;border-radius:10px;color:#000;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:10px;}
   .btn-pdf:disabled{opacity:.55;cursor:wait;}
-  .btn-email{
-    width:100%;padding:13px;background:transparent;
-    border:1.5px solid #6366f1;border-radius:10px;color:#818cf8;
-    font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;
-    letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;
-    transition:all .2s;
-  }
-  .btn-email:hover{background:#6366f115;}
+  .btn-email{width:100%;padding:13px;background:transparent;border:1.5px solid #6366f1;border-radius:10px;color:#818cf8;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;}
+  .btn-warn{width:100%;padding:13px;background:linear-gradient(135deg,${C.attention},#b91c1c);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;margin-top:8px;}
 
-  /* ── Report preview ── */
-  .receipt-preview{
-    background:${C.card};border:1px solid ${C.border};
-    border-radius:14px;padding:22px;
-  }
+  /* A-prompt modal */
+  .modal-overlay{position:fixed;inset:0;background:#000c;z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+  .modal-box{background:${C.card};border:1px solid ${C.attention}60;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;}
+  .modal-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:${C.attention};margin-bottom:6px;}
+  .modal-sub{font-size:13px;color:${C.muted};margin-bottom:20px;line-height:1.5;}
+  .modal-component{background:${C.surface};border:1px solid ${C.attention}40;border-radius:8px;padding:10px 14px;font-size:14px;color:${C.attention};font-weight:600;margin-bottom:16px;}
+  .modal-btns{display:flex;gap:10px;}
+  .modal-btn-yes{flex:1;padding:13px;background:linear-gradient(135deg,${C.attention},#b91c1c);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+  .modal-btn-no{flex:1;padding:13px;background:transparent;border:1.5px solid ${C.border};border-radius:10px;color:${C.muted};font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+
+  /* Parts table */
+  .parts-table{width:100%;border-collapse:collapse;margin-top:8px;}
+  .parts-table th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:${C.muted};padding:6px 8px;text-align:left;border-bottom:1px solid ${C.border};}
+  .parts-table td{padding:6px 4px;border-bottom:1px solid ${C.border}18;vertical-align:middle;}
+  .parts-table input{background:${C.surface};border:1px solid ${C.border};color:${C.text};padding:7px 9px;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%;}
+  .parts-table input:focus{border-color:${C.accent};}
+  .parts-table input[type=number]{width:60px;text-align:center;}
+  .add-part-btn{padding:7px 14px;background:transparent;border:1.5px solid ${C.border};border-radius:7px;color:${C.accent};font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;font-family:'Space Grotesk',sans-serif;}
+  .del-btn{padding:4px 8px;background:transparent;border:none;color:${C.attention};cursor:pointer;font-size:16px;}
+
+  /* Receipt/report */
+  .receipt-preview{background:${C.card};border:1px solid ${C.border};border-radius:14px;padding:22px;}
   .rh{text-align:center;border-bottom:1px solid ${C.border};padding-bottom:16px;margin-bottom:16px;}
-  .rlogo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:${C.white};letter-spacing:1px;}
+  .rlogo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:${C.white};}
   .rlogo span{color:${C.accent};}
   .rlogo-sub{font-size:10px;color:${C.muted};letter-spacing:2.5px;text-transform:uppercase;margin-top:3px;}
   .rmeta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
@@ -184,11 +117,7 @@ const css = `
   .mv{font-size:13px;font-weight:500;}
   .rstatus{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:10px;margin-bottom:16px;}
   .rsec{margin-bottom:14px;}
-  .rsect{
-    font-family:'Space Grotesk',sans-serif;font-size:10px;letter-spacing:2.5px;
-    color:${C.accent};text-transform:uppercase;margin-bottom:6px;
-    border-bottom:1px solid ${C.border};padding-bottom:4px;
-  }
+  .rsect{font-family:'Space Grotesk',sans-serif;font-size:10px;letter-spacing:2.5px;color:${C.accent};text-transform:uppercase;margin-bottom:6px;border-bottom:1px solid ${C.border};padding-bottom:4px;}
   .rrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid ${C.border}18;}
   .rrow:last-child{border-bottom:none;}
   .ri{font-size:13px;}
@@ -199,31 +128,24 @@ const css = `
   .bn{background:${C.border};color:${C.muted};}
   .sig{border-top:1px solid ${C.border};padding-top:12px;margin-top:16px;display:flex;justify-content:space-between;font-size:11px;color:${C.muted};}
 
-  /* ── History cards ── */
+  /* History cards */
   .hcard{background:${C.card};border:1px solid ${C.border};border-radius:12px;padding:16px;margin-bottom:10px;transition:border-color .2s;}
   .hcard:hover{border-color:${C.accent}40;}
+  .hcard.sr-card{border-left:3px solid ${C.attention};}
   .hcard-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .hcard-prop{font-weight:600;font-size:15px;}
   .hcard-date{font-size:11px;color:${C.muted};margin-top:2px;}
   .hcard-meta{display:flex;gap:10px;margin-top:6px;font-size:12px;color:${C.muted};flex-wrap:wrap;}
   .hcard-actions{display:flex;gap:8px;margin-top:12px;}
-  .hbtn{
-    flex:1;padding:9px;text-align:center;border-radius:7px;
-    font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;
-    letter-spacing:.5px;cursor:pointer;border:1.5px solid ${C.border};
-    background:transparent;color:${C.muted};transition:all .2s;
-  }
+  .hbtn{flex:1;padding:9px;text-align:center;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;border:1.5px solid ${C.border};background:transparent;color:${C.muted};transition:all .2s;}
   .hbtn:hover{border-color:${C.accent}50;color:${C.accent};}
 
-  /* ── Misc ── */
   .empty{text-align:center;padding:48px 20px;color:${C.muted};}
-  .empty-icon{font-size:40px;margin-bottom:12px;}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-weight:700;padding:12px 24px;border-radius:30px;font-size:13px;z-index:999;white-space:nowrap;letter-spacing:.5px;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);font-weight:700;padding:12px 24px;border-radius:30px;font-size:13px;z-index:999;white-space:nowrap;}
   .toast.ok{background:${C.good};color:#000;}
   .toast.err{background:${C.attention};color:#fff;}
-
-  /* ── Divider label ── */
   .field-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:${C.muted};margin-bottom:8px;display:block;}
+  .linked-badge{background:${C.accent}18;border:1px solid ${C.accent}40;border-radius:6px;padding:4px 10px;font-size:11px;color:${C.accent};display:inline-block;margin-bottom:12px;}
 `;
 
 // ── Option sets ───────────────────────────────────────────────────────────────
@@ -246,6 +168,7 @@ const SensorOpts=[{value:'Clean',label:'Clean'},{value:'Fault',label:'Fault'}];
 const iv=()=>({val:'',note:''});
 const initSP50=()=>({filterBag:iv(),hepaFilter:iv(),rollerBrush:iv(),trashTray:iv(),trayFilter:iv(),chassis:iv(),underMachine:iv(),body:iv(),manualMove:iv(),chargingSys:iv(),chargePort:iv(),camera:iv(),lights:iv(),firmware:iv(),g4g:iv(),imu:iv(),rollerLift:iv(),rbRpm:iv(),vacMotor:iv(),sideBrush:iv(),baffleFreq:iv(),battHealth:'',battVoltage:'',battCurrent:'',leftMotor:'',rightMotor:''});
 const initL50=()=>({recoveryTank:iv(),drainFilter:iv(),squeegee:iv(),vacHose:iv(),filterBag:iv(),magPad:iv(),freshSensor:iv(),autoDrain:iv(),autoFill:iv(),chassis:iv(),underMachine:iv(),body:iv(),manualMove:iv(),chargingSys:iv(),chargePort:iv(),camera:iv(),lights:iv(),firmware:iv()});
+const initSR=()=>({date:new Date().toISOString().split('T')[0],technician:'',property:'',machineName:'',serial:'',unit:'',issueReported:'',workPerformed:'',parts:[],startTime:'',finishTime:'',totalDowntime:'',testingVerification:'',additionalNotes:'',linkedComponent:'',linkedInspectionId:''});
 
 const getColor=v=>{
   if(!v) return 'bn';
@@ -255,294 +178,187 @@ const getColor=v=>{
 };
 
 // ── localStorage ──────────────────────────────────────────────────────────────
-const STORE='mbody_inspections';
-const loadHistory=()=>{try{const r=localStorage.getItem(STORE);return r?JSON.parse(r):[];}catch{return [];}};
-const saveHistory=h=>{try{localStorage.setItem(STORE,JSON.stringify(h));}catch{}};
+const INSP_KEY='mbody_inspections';
+const SR_KEY='mbody_service_reports';
+const loadLS=key=>{try{const r=localStorage.getItem(key);return r?JSON.parse(r):[];}catch{return [];}};
+const saveLS=(key,data)=>{try{localStorage.setItem(key,JSON.stringify(data));}catch{}};
 
-// ── PDF export ────────────────────────────────────────────────────────────────
-function exportPDF(record){
+// ── PDF: Inspection ───────────────────────────────────────────────────────────
+function exportInspectionPDF(record){
   const{info:ri,summary:rs,sp50:rsp,l50:rl,techNotes:rn}=record;
   const doc=new jsPDF({unit:'mm',format:'a4'});
   const W=doc.internal.pageSize.getWidth();
   let y=15;
-
   const sRGB=rs.status==='Good'?[34,197,94]:rs.status==='Monitor'?[245,158,11]:[239,68,68];
-
-  // Header bar
-  doc.setFillColor(5,10,18);
-  doc.rect(0,0,W,30,'F');
-  // Accent stripe
-  doc.setFillColor(79,195,247);
-  doc.rect(0,28,W,2,'F');
-  // Logo
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(18);
-  doc.setTextColor(255,255,255);
-  doc.text('MBody',14,18);
-  doc.setTextColor(79,195,247);
-  doc.text(' AI',14+doc.getTextWidth('MBody'),18);
-  doc.setFontSize(8);
-  doc.setTextColor(92,122,153);
-  doc.text('SERVICE INSPECTION REPORT',14,24);
-  // Date top right
-  doc.setFontSize(8);
-  doc.setTextColor(92,122,153);
-  doc.text(ri.date||'',W-14,18,{align:'right'});
+  doc.setFillColor(5,10,18);doc.rect(0,0,W,30,'F');
+  doc.setFillColor(79,195,247);doc.rect(0,28,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(255,255,255);doc.text('MBody',14,18);
+  doc.setTextColor(79,195,247);doc.text(' AI',14+doc.getTextWidth('MBody'),18);
+  doc.setFontSize(8);doc.setTextColor(92,122,153);doc.text('SERVICE INSPECTION REPORT',14,24);
+  doc.setFontSize(8);doc.setTextColor(92,122,153);doc.text(ri.date||'',W-14,18,{align:'right'});
   y=38;
-
-  // Meta table
-  doc.autoTable({
-    startY:y,
-    head:[],
-    body:[
-      ['Property',ri.property||'—','Date',ri.date||'—'],
-      ['Technician',ri.technician||'—','Next Visit',ri.nextVisit||'—'],
-      ['Machine',ri.model?.join(' + ')||'—','Serial #',ri.serial||'—'],
-      ['Firmware',ri.firmware||'—','Visit Type','Scheduled'],
-    ],
-    theme:'plain',
-    styles:{fontSize:9,cellPadding:2,textColor:[30,50,70]},
-    columnStyles:{
-      0:{fontStyle:'bold',cellWidth:28,textColor:[92,122,153]},
-      1:{cellWidth:62},
-      2:{fontStyle:'bold',cellWidth:28,textColor:[92,122,153]},
-      3:{cellWidth:62},
-    },
-  });
+  doc.autoTable({startY:y,head:[],body:[['Property',ri.property||'—','Date',ri.date||'—'],['Technician',ri.technician||'—','Next Visit',ri.nextVisit||'—'],['Machine',ri.model?.join(' + ')||'—','Serial #',ri.serial||'—'],['Firmware',ri.firmware||'—','Visit Type','Scheduled']],theme:'plain',styles:{fontSize:9,cellPadding:2,textColor:[30,50,70]},columnStyles:{0:{fontStyle:'bold',cellWidth:28,textColor:[92,122,153]},1:{cellWidth:62},2:{fontStyle:'bold',cellWidth:28,textColor:[92,122,153]},3:{cellWidth:62}}});
   y=doc.lastAutoTable.finalY+6;
-
-  // Status bar
-  if(rs.status){
-    doc.setFillColor(...sRGB);
-    doc.roundedRect(14,y,W-28,14,3,3,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(11);
-    doc.text(`STATUS: ${rs.status}`,20,y+9);
-    doc.text(`RISK LEVEL: ${rs.risk||'—'}`,W-55,y+9);
-    y+=20;
-  }
-
-  // Action required
-  if(rs.action){
-    doc.setFillColor(254,226,226);
-    doc.roundedRect(14,y,W-28,10,2,2,'F');
-    doc.setTextColor(185,28,28);
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(9);
-    doc.text(`⚠ ACTION REQUIRED: ${rs.action}`,18,y+6.5);
-    y+=16;
-  }
-
-  const addSection=(title,rows)=>{
+  if(rs.status){doc.setFillColor(...sRGB);doc.roundedRect(14,y,W-28,14,3,3,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text(`STATUS: ${rs.status}`,20,y+9);doc.text(`RISK: ${rs.risk||'—'}`,W-55,y+9);y+=20;}
+  if(rs.action){doc.setFillColor(254,226,226);doc.roundedRect(14,y,W-28,10,2,2,'F');doc.setTextColor(185,28,28);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(`ACTION REQUIRED: ${rs.action}`,18,y+6.5);y+=16;}
+  const addSec=(title,rows)=>{
     if(y>248){doc.addPage();y=15;}
-    doc.autoTable({
-      startY:y,
-      head:[[{content:title,colSpan:3,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}]],
-      body:rows.map(([label,v])=>[label,v?.val||'—',v?.note||'']),
-      theme:'striped',
-      headStyles:{fillColor:[10,21,36]},
-      styles:{fontSize:9,cellPadding:2.5},
-      columnStyles:{
-        0:{cellWidth:80,textColor:[40,60,80]},
-        1:{cellWidth:30,fontStyle:'bold'},
-        2:{cellWidth:60,textColor:[92,122,153],fontSize:8},
-      },
-      didParseCell:(data)=>{
-        if(data.column.index===1&&data.section==='body'){
-          const v=data.cell.raw;
-          if(['G','Pass','Work','Clean','Smooth','Firm','Secure','OK','Good','None'].includes(v)) data.cell.styles.textColor=[22,163,74];
-          else if(['M','Dirty','Weak','Loose','Updated','Partial'].includes(v)) data.cell.styles.textColor=[217,119,6];
-          else if(v&&v!=='—') data.cell.styles.textColor=[220,38,38];
-        }
-      },
-    });
+    doc.autoTable({startY:y,head:[[{content:title,colSpan:3,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}]],body:rows.map(([l,v])=>[l,v?.val||'—',v?.note||'']),theme:'striped',styles:{fontSize:9,cellPadding:2.5},columnStyles:{0:{cellWidth:80,textColor:[40,60,80]},1:{cellWidth:30,fontStyle:'bold'},2:{cellWidth:60,textColor:[92,122,153],fontSize:8}},
+    didParseCell:(d)=>{if(d.column.index===1&&d.section==='body'){const v=d.cell.raw;if(['G','Pass','Work','Clean','Smooth','Firm','Secure','OK','Good','None'].includes(v))d.cell.styles.textColor=[22,163,74];else if(['M','Dirty','Weak','Loose','Updated','Partial'].includes(v))d.cell.styles.textColor=[217,119,6];else if(v&&v!=='—')d.cell.styles.textColor=[220,38,38];}}});
     y=doc.lastAutoTable.finalY+4;
   };
-
-  if(rsp){
-    addSection('SP50 — Filtration & Cleaning',[['Filter Bag',rsp.filterBag],['HEPA Filter',rsp.hepaFilter],['Roller Brush',rsp.rollerBrush],['Trash Tray',rsp.trashTray],['Tray Filter',rsp.trayFilter]]);
-    addSection('SP50 — Mechanical / Electrical / Sensors',[['Chassis / Frame',rsp.chassis],['Under Machine',rsp.underMachine],['Body Condition',rsp.body],['Manual Movement',rsp.manualMove],['Charging System',rsp.chargingSys],['Charge Port',rsp.chargePort],['Camera / Lidar',rsp.camera],['Lights',rsp.lights],['Firmware',rsp.firmware]]);
-    addSection('SP50 — Diagnostics',[['4G Check',rsp.g4g],['IMU',rsp.imu],['Roller Brush Lift Height',rsp.rollerLift],['RB RPM',rsp.rbRpm],['Vac Motor Speed',rsp.vacMotor],['Side Brush RPM',rsp.sideBrush],['Baffle Movement Freq',rsp.baffleFreq]]);
-    const batt=[['Health',rsp.battHealth,'%'],['Voltage',rsp.battVoltage,'V'],['Current',rsp.battCurrent,'A'],['Left Motor Load',rsp.leftMotor,''],['Right Motor Load',rsp.rightMotor,'']].filter(([,v])=>v);
-    if(batt.length){
-      if(y>248){doc.addPage();y=15;}
-      doc.autoTable({startY:y,head:[[{content:'SP50 — Battery',colSpan:2,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}]],body:batt.map(([l,v,u])=>[l,`${v}${u}`]),theme:'striped',styles:{fontSize:9,cellPadding:2.5},columnStyles:{0:{cellWidth:80},1:{fontStyle:'bold',textColor:[0,150,200]}}});
-      y=doc.lastAutoTable.finalY+4;
-    }
-  }
-  if(rl){
-    addSection('L50 — Fluid & Recovery System',[['Recovery Tank',rl.recoveryTank],['Drain Filter',rl.drainFilter],['Squeegee',rl.squeegee],['Vacuum Hose',rl.vacHose]]);
-    addSection('L50 — Pads, Sensors & Automation',[['Filter Bag',rl.filterBag],['Mag Pad Holders',rl.magPad],['Fresh Water Sensor',rl.freshSensor],['Auto Drain',rl.autoDrain],['Auto Fill',rl.autoFill]]);
-    addSection('L50 — Mechanical / Electrical / Sensors',[['Chassis / Frame',rl.chassis],['Under Machine',rl.underMachine],['Body Condition',rl.body],['Manual Movement',rl.manualMove],['Charging System',rl.chargingSys],['Charge Port',rl.chargePort],['Camera / Lidar',rl.camera],['Lights',rl.lights],['Firmware',rl.firmware]]);
-  }
-
-  if(rn){
-    if(y>240){doc.addPage();y=15;}
-    doc.setFillColor(10,21,36);
-    doc.roundedRect(14,y,W-28,8,2,2,'F');
-    doc.setTextColor(79,195,247);
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(9);
-    doc.text('TECHNICIAN NOTES',18,y+5.5);
-    y+=11;
-    doc.setTextColor(40,60,80);
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(9);
-    const lines=doc.splitTextToSize(rn,W-28);
-    doc.text(lines,14,y);
-    y+=lines.length*5+6;
-  }
-
-  // Signature
+  if(rsp){addSec('SP50 — Filtration & Cleaning',[['Filter Bag',rsp.filterBag],['HEPA Filter',rsp.hepaFilter],['Roller Brush',rsp.rollerBrush],['Trash Tray',rsp.trashTray],['Tray Filter',rsp.trayFilter]]);addSec('SP50 — Mechanical / Electrical / Sensors',[['Chassis / Frame',rsp.chassis],['Under Machine',rsp.underMachine],['Body Condition',rsp.body],['Manual Movement',rsp.manualMove],['Charging System',rsp.chargingSys],['Charge Port',rsp.chargePort],['Camera / Lidar',rsp.camera],['Lights',rsp.lights],['Firmware',rsp.firmware]]);addSec('SP50 — Diagnostics',[['4G Check',rsp.g4g],['IMU',rsp.imu],['Roller Brush Lift Height',rsp.rollerLift],['RB RPM',rsp.rbRpm],['Vac Motor Speed',rsp.vacMotor],['Side Brush RPM',rsp.sideBrush],['Baffle Movement Freq',rsp.baffleFreq]]);
+  const batt=[['Health',rsp.battHealth,'%'],['Voltage',rsp.battVoltage,'V'],['Current',rsp.battCurrent,'A'],['Left Motor Load',rsp.leftMotor,''],['Right Motor Load',rsp.rightMotor,'']].filter(([,v])=>v);
+  if(batt.length){if(y>248){doc.addPage();y=15;}doc.autoTable({startY:y,head:[[{content:'SP50 — Battery',colSpan:2,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}]],body:batt.map(([l,v,u])=>[l,`${v}${u}`]),theme:'striped',styles:{fontSize:9,cellPadding:2.5},columnStyles:{0:{cellWidth:80},1:{fontStyle:'bold',textColor:[0,150,200]}}});y=doc.lastAutoTable.finalY+4;}}
+  if(rl){addSec('L50 — Fluid & Recovery System',[['Recovery Tank',rl.recoveryTank],['Drain Filter',rl.drainFilter],['Squeegee',rl.squeegee],['Vacuum Hose',rl.vacHose]]);addSec('L50 — Pads, Sensors & Automation',[['Filter Bag',rl.filterBag],['Mag Pad Holders',rl.magPad],['Fresh Water Sensor',rl.freshSensor],['Auto Drain',rl.autoDrain],['Auto Fill',rl.autoFill]]);addSec('L50 — Mechanical / Electrical / Sensors',[['Chassis / Frame',rl.chassis],['Under Machine',rl.underMachine],['Body Condition',rl.body],['Manual Movement',rl.manualMove],['Charging System',rl.chargingSys],['Charge Port',rl.chargePort],['Camera / Lidar',rl.camera],['Lights',rl.lights],['Firmware',rl.firmware]]);}
+  if(rn){if(y>240){doc.addPage();y=15;}doc.setFillColor(10,21,36);doc.roundedRect(14,y,W-28,8,2,2,'F');doc.setTextColor(79,195,247);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('TECHNICIAN NOTES',18,y+5.5);y+=11;doc.setTextColor(40,60,80);doc.setFont('helvetica','normal');doc.setFontSize(9);const lines=doc.splitTextToSize(rn,W-28);doc.text(lines,14,y);y+=lines.length*5+6;}
   if(y>260){doc.addPage();y=15;}
-  doc.setDrawColor(180,180,180);
-  doc.line(14,y+10,90,y+10);
-  doc.line(110,y+10,W-14,y+10);
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(8);
-  doc.text(`Technician: ${ri.technician||''}`,14,y+15);
-  doc.text('Client Acknowledgment:',110,y+15);
-
-  // Footer
-  const totalPages=doc.internal.getNumberOfPages();
-  for(let i=1;i<=totalPages;i++){
-    doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(92,122,153);
-    doc.text(`MBody AI  ·  Service Inspection Report  ·  ${ri.property||''}  ·  ${ri.date||''}  ·  Page ${i} of ${totalPages}`,W/2,doc.internal.pageSize.getHeight()-6,{align:'center'});
-  }
-
-  const fname=`mbody-ai-${(ri.property||'inspection').replace(/\s+/g,'-').toLowerCase()}-${ri.date||'report'}.pdf`;
-  doc.save(fname);
+  doc.setDrawColor(180,180,180);doc.line(14,y+10,90,y+10);doc.line(110,y+10,W-14,y+10);doc.setTextColor(150,150,150);doc.setFontSize(8);doc.text(`Technician: ${ri.technician||''}`,14,y+15);doc.text('Client Acknowledgment:',110,y+15);
+  const tp=doc.internal.getNumberOfPages();for(let i=1;i<=tp;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(92,122,153);doc.text(`MBody AI  ·  Inspection Report  ·  ${ri.property||''}  ·  ${ri.date||''}  ·  Page ${i} of ${tp}`,W/2,doc.internal.pageSize.getHeight()-6,{align:'center'});}
+  doc.save(`mbody-inspection-${(ri.property||'report').replace(/\s+/g,'-').toLowerCase()}-${ri.date||'report'}.pdf`);
 }
 
-// ── Email text export ─────────────────────────────────────────────────────────
-function emailReport(record){
-  const{info:ri,summary:rs,sp50:rsp,l50:rl,techNotes:rn}=record;
-  const line=(label,v)=>`${label}: ${v?.val||'—'}${v?.note?' ('+v.note+')':''}`;
-  let body=`MBODY AI — SERVICE INSPECTION REPORT\n${'='.repeat(42)}\n\n`;
-  body+=`Property: ${ri.property||'—'}\nTechnician: ${ri.technician||'—'}\nDate: ${ri.date||'—'}\nNext Visit: ${ri.nextVisit||'—'}\nMachine: ${ri.model?.join(' + ')||'—'}\nSerial #: ${ri.serial||'—'}\nFirmware: ${ri.firmware||'—'}\n\n`;
-  if(rs.status) body+=`STATUS: ${rs.status}   RISK: ${rs.risk||'—'}\n`;
-  if(rs.action) body+=`ACTION REQUIRED: ${rs.action}\n`;
-  body+='\n';
-  if(rsp){
-    body+=`SP50 — FILTRATION & CLEANING\n${'-'.repeat(30)}\n`;
-    body+=[line('Filter Bag',rsp.filterBag),line('HEPA Filter',rsp.hepaFilter),line('Roller Brush',rsp.rollerBrush),line('Trash Tray',rsp.trashTray),line('Tray Filter',rsp.trayFilter)].join('\n')+'\n\n';
-    body+=`SP50 — MECHANICAL / ELECTRICAL\n${'-'.repeat(30)}\n`;
-    body+=[line('Chassis/Frame',rsp.chassis),line('Under Machine',rsp.underMachine),line('Body',rsp.body),line('Movement',rsp.manualMove),line('Charging',rsp.chargingSys),line('Charge Port',rsp.chargePort),line('Camera/Lidar',rsp.camera),line('Lights',rsp.lights),line('Firmware',rsp.firmware)].join('\n')+'\n\n';
-    body+=`SP50 — DIAGNOSTICS\n${'-'.repeat(30)}\n`;
-    body+=[line('4G',rsp.g4g),line('IMU',rsp.imu),line('RB Lift',rsp.rollerLift),line('RB RPM',rsp.rbRpm),line('Vac Motor',rsp.vacMotor),line('Side Brush',rsp.sideBrush),line('Baffle Freq',rsp.baffleFreq)].join('\n')+'\n\n';
-  }
-  if(rl){
-    body+=`L50 — FLUID & RECOVERY\n${'-'.repeat(30)}\n`;
-    body+=[line('Recovery Tank',rl.recoveryTank),line('Drain Filter',rl.drainFilter),line('Squeegee',rl.squeegee),line('Vac Hose',rl.vacHose)].join('\n')+'\n\n';
-    body+=`L50 — PADS & AUTOMATION\n${'-'.repeat(30)}\n`;
-    body+=[line('Filter Bag',rl.filterBag),line('Mag Pad Holders',rl.magPad),line('Fresh Sensor',rl.freshSensor),line('Auto Drain',rl.autoDrain),line('Auto Fill',rl.autoFill)].join('\n')+'\n\n';
-    body+=`L50 — MECHANICAL / ELECTRICAL\n${'-'.repeat(30)}\n`;
-    body+=[line('Chassis',rl.chassis),line('Under Machine',rl.underMachine),line('Body',rl.body),line('Movement',rl.manualMove),line('Charging',rl.chargingSys),line('Charge Port',rl.chargePort),line('Camera/Lidar',rl.camera),line('Lights',rl.lights),line('Firmware',rl.firmware)].join('\n')+'\n\n';
-  }
-  if(rn) body+=`TECHNICIAN NOTES\n${'-'.repeat(30)}\n${rn}\n\n`;
-  body+='\nSent via MBody AI Service Inspection App · mbody.ai';
-  window.location.href=`mailto:?subject=${encodeURIComponent(`MBody AI Inspection – ${ri.property||'Property'} – ${ri.date||'Today'}`)}&body=${encodeURIComponent(body)}`;
+// ── PDF: Service Report ───────────────────────────────────────────────────────
+function exportServicePDF(sr){
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth();
+  let y=15;
+  doc.setFillColor(5,10,18);doc.rect(0,0,W,30,'F');
+  doc.setFillColor(239,68,68);doc.rect(0,28,W,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(255,255,255);doc.text('MBody',14,18);
+  doc.setTextColor(79,195,247);doc.text(' AI',14+doc.getTextWidth('MBody'),18);
+  doc.setFontSize(8);doc.setTextColor(239,68,68);doc.text('MACHINE SERVICE & REPAIR REPORT',14,24);
+  doc.setFontSize(8);doc.setTextColor(92,122,153);doc.text(sr.date||'',W-14,18,{align:'right'});
+  y=38;
+  doc.autoTable({startY:y,head:[],body:[['Date',sr.date||'—','Technician',sr.technician||'—'],['Property',sr.property||'—','Unit / Location',sr.unit||'—'],['Machine Name/Model',sr.machineName||'—','Serial Number',sr.serial||'—']],theme:'plain',styles:{fontSize:9,cellPadding:2.5,textColor:[30,50,70]},columnStyles:{0:{fontStyle:'bold',cellWidth:35,textColor:[92,122,153]},1:{cellWidth:55},2:{fontStyle:'bold',cellWidth:35,textColor:[92,122,153]},3:{cellWidth:55}}});
+  y=doc.lastAutoTable.finalY+6;
+  if(sr.linkedComponent){doc.setFillColor(20,30,50);doc.roundedRect(14,y,W-28,10,2,2,'F');doc.setTextColor(79,195,247);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(`Flagged Component: ${sr.linkedComponent}`,18,y+6.5);y+=16;}
+  const textBlock=(label,text)=>{if(!text) return;if(y>255){doc.addPage();y=15;}doc.setFillColor(10,21,36);doc.roundedRect(14,y,W-28,8,2,2,'F');doc.setTextColor(79,195,247);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(label,18,y+5.5);y+=11;doc.setTextColor(40,60,80);doc.setFont('helvetica','normal');doc.setFontSize(9);const lines=doc.splitTextToSize(text,W-28);doc.text(lines,14,y);y+=lines.length*5+6;};
+  textBlock('ISSUE REPORTED',sr.issueReported);
+  textBlock('WORK PERFORMED / CORRECTIVE ACTION',sr.workPerformed);
+  if(sr.parts&&sr.parts.length>0){if(y>230){doc.addPage();y=15;}doc.autoTable({startY:y,head:[[{content:'PARTS REPLACED',colSpan:3,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}],['Part Name','Part Number','Qty']],body:sr.parts.map(p=>[p.name||'—',p.number||'—',p.qty||'—']),theme:'striped',styles:{fontSize:9,cellPadding:2.5},headStyles:{fillColor:[10,21,36],textColor:[79,195,247]},columnStyles:{0:{cellWidth:90},1:{cellWidth:70},2:{cellWidth:20,halign:'center'}}});y=doc.lastAutoTable.finalY+6;}
+  if(sr.startTime||sr.finishTime||sr.totalDowntime){if(y>248){doc.addPage();y=15;}doc.autoTable({startY:y,head:[[{content:'TIME LOG',colSpan:2,styles:{fillColor:[10,21,36],textColor:[79,195,247],fontStyle:'bold',fontSize:9}}]],body:[['Start Time',sr.startTime||'—'],['Finish Time',sr.finishTime||'—'],['Total Downtime',sr.totalDowntime||'—']],theme:'striped',styles:{fontSize:9,cellPadding:2.5},columnStyles:{0:{fontStyle:'bold',cellWidth:60,textColor:[92,122,153]},1:{cellWidth:120}}});y=doc.lastAutoTable.finalY+6;}
+  textBlock('TESTING / VERIFICATION AFTER REPAIR',sr.testingVerification);
+  textBlock('ADDITIONAL NOTES',sr.additionalNotes);
+  if(y>260){doc.addPage();y=15;}
+  doc.setDrawColor(180,180,180);doc.line(14,y+10,90,y+10);doc.line(110,y+10,W-14,y+10);doc.setTextColor(150,150,150);doc.setFontSize(8);doc.text(`Technician: ${sr.technician||''}`,14,y+15);doc.text('Customer/Manager:',110,y+15);
+  const tp=doc.internal.getNumberOfPages();for(let i=1;i<=tp;i++){doc.setPage(i);doc.setFontSize(7);doc.setTextColor(92,122,153);doc.text(`MBody AI  ·  Service Report  ·  ${sr.property||''}  ·  ${sr.date||''}  ·  Page ${i} of ${tp}`,W/2,doc.internal.pageSize.getHeight()-6,{align:'center'});}
+  doc.save(`mbody-service-${(sr.property||'report').replace(/\s+/g,'-').toLowerCase()}-${sr.date||'report'}.pdf`);
 }
 
-// ── Small reusable components ─────────────────────────────────────────────────
+// ── Email ─────────────────────────────────────────────────────────────────────
+function emailSR(sr){
+  let body=`MBODY AI — MACHINE SERVICE & REPAIR REPORT\n${'='.repeat(44)}\n\n`;
+  body+=`Date: ${sr.date||'—'}\nTechnician: ${sr.technician||'—'}\nProperty: ${sr.property||'—'}\nMachine: ${sr.machineName||'—'}\nSerial #: ${sr.serial||'—'}\nUnit/Location: ${sr.unit||'—'}\n\n`;
+  if(sr.linkedComponent) body+=`Flagged Component: ${sr.linkedComponent}\n\n`;
+  if(sr.issueReported) body+=`ISSUE REPORTED\n${'-'.repeat(30)}\n${sr.issueReported}\n\n`;
+  if(sr.workPerformed) body+=`WORK PERFORMED\n${'-'.repeat(30)}\n${sr.workPerformed}\n\n`;
+  if(sr.parts?.length){body+=`PARTS REPLACED\n${'-'.repeat(30)}\n`;sr.parts.forEach(p=>{body+=`${p.name} | P/N: ${p.number} | Qty: ${p.qty}\n`;});body+='\n';}
+  if(sr.startTime) body+=`Start Time: ${sr.startTime}\n`;
+  if(sr.finishTime) body+=`Finish Time: ${sr.finishTime}\n`;
+  if(sr.totalDowntime) body+=`Total Downtime: ${sr.totalDowntime}\n\n`;
+  if(sr.testingVerification) body+=`TESTING / VERIFICATION\n${'-'.repeat(30)}\n${sr.testingVerification}\n\n`;
+  if(sr.additionalNotes) body+=`ADDITIONAL NOTES\n${'-'.repeat(30)}\n${sr.additionalNotes}\n\n`;
+  body+='\nSent via MBody AI Service App · mbody.ai';
+  window.location.href=`mailto:?subject=${encodeURIComponent(`MBody AI Service Report – ${sr.property||'Property'} – ${sr.date||'Today'}`)}&body=${encodeURIComponent(body)}`;
+}
+
+// ── Small components ──────────────────────────────────────────────────────────
 const RadioGroup=({options,value,onChange})=>(
-  <div className="rg">
-    {options.map(opt=>{
-      const sel=value===opt.value;
-      let cls='';
-      if(sel) cls=['G','Pass','Work','Clean','Smooth','Firm','Secure','OK','Good','None'].includes(opt.value)?'g':['M','Dirty','Weak','Loose','Updated','Partial'].includes(opt.value)?'m':'a';
-      return <div key={opt.value} className={`rb ${sel?cls:''}`} onClick={()=>onChange(opt.value)}>{opt.label}</div>;
-    })}
-  </div>
+  <div className="rg">{options.map(opt=>{const sel=value===opt.value;let cls='';if(sel)cls=['G','Pass','Work','Clean','Smooth','Firm','Secure','OK','Good','None'].includes(opt.value)?'g':['M','Dirty','Weak','Loose','Updated','Partial'].includes(opt.value)?'m':'a';return <div key={opt.value} className={`rb ${sel?cls:''}`} onClick={()=>onChange(opt.value)}>{opt.label}</div>;})}</div>
 );
 
-const IRow=({label,options,field,value,onChange})=>{
+const IRow=({label,options,field,value,onChange,onAttention})=>{
   const[note,setNote]=useState(value.note||'');
   useEffect(()=>setNote(value.note||''),[value.note]);
+  const handleChange=v=>{
+    onChange(field,{...value,val:v});
+    if(v==='A'&&onAttention) onAttention(label);
+  };
   return(
     <div className="irow">
       <div className="rlabel">{label}</div>
-      <RadioGroup options={options} value={value.val} onChange={v=>onChange(field,{...value,val:v})}/>
+      <RadioGroup options={options} value={value.val} onChange={handleChange}/>
       <input className="ni" placeholder="notes..." value={note} onChange={e=>{setNote(e.target.value);onChange(field,{...value,note:e.target.value});}}/>
     </div>
   );
 };
 
 const RBadge=({val})=><span className={`badge ${getColor(val)}`}>{val||'—'}</span>;
-
 const Section=({title,rows})=>(
-  <div className="rsec">
-    <div className="rsect">{title}</div>
+  <div className="rsec"><div className="rsect">{title}</div>
     {rows.map(([l,v])=>(
-      <div className="rrow" key={l}>
-        <div className="ri">{l}{v?.note?<span style={{color:C.muted,fontSize:11,marginLeft:6}}>— {v.note}</span>:''}</div>
-        <RBadge val={v?.val}/>
-      </div>
+      <div className="rrow" key={l}><div className="ri">{l}{v?.note?<span style={{color:C.muted,fontSize:11,marginLeft:6}}>— {v.note}</span>:''}</div><RBadge val={v?.val}/></div>
     ))}
   </div>
 );
 
-const Logo=()=>(
-  <div className="logo" onClick={()=>{}}>
+const Logo=({onClick})=>(
+  <div onClick={onClick} style={{cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
     <div className="logo-mark">MB</div>
-    <div>
-      <div className="logo-text">MBody <span>AI</span></div>
-      <div className="logo-sub">Service Inspection</div>
-    </div>
+    <div><div className="logo-text">MBody <span>AI</span></div><div className="logo-sub">Service Inspection</div></div>
   </div>
 );
 
-const ReceiptPreview=({record})=>{
+// ── Inspection receipt preview ─────────────────────────────────────────────────
+const InspPreview=({record})=>{
   const{info:ri,summary:rs,sp50:rsp,l50:rl,techNotes:rn}=record;
-  const scolor=rs.status==='Good'?C.good:rs.status==='Monitor'?C.monitor:C.attention;
+  const sc=rs.status==='Good'?C.good:rs.status==='Monitor'?C.monitor:C.attention;
   return(
     <div className="receipt-preview">
-      <div className="rh">
-        <div className="rlogo">MBody <span>AI</span></div>
-        <div className="rlogo-sub">Service Inspection Report</div>
-      </div>
-      <div className="rmeta">
-        {[['Property',ri.property],['Technician',ri.technician],['Date',ri.date],['Next Visit',ri.nextVisit],['Machine',ri.model?.join(' + ')],['Serial #',ri.serial]].map(([l,v])=>(
-          <div className="mi" key={l}><div className="ml">{l}</div><div className="mv">{v||'—'}</div></div>
-        ))}
-      </div>
-      {rs.status&&<div className="rstatus" style={{background:scolor+'18',border:`1px solid ${scolor}40`}}>
-        <div><div style={{fontSize:9,color:C.muted,textTransform:'uppercase',letterSpacing:1.5}}>Overall Status</div><div style={{fontSize:20,fontFamily:'Space Grotesk',fontWeight:700,color:scolor}}>{rs.status}</div></div>
-        <div style={{textAlign:'right'}}><div style={{fontSize:9,color:C.muted,textTransform:'uppercase',letterSpacing:1.5}}>Risk Level</div><div style={{fontSize:20,fontFamily:'Space Grotesk',fontWeight:700,color:scolor}}>{rs.risk||'—'}</div></div>
-      </div>}
+      <div className="rh"><div className="rlogo">MBody <span>AI</span></div><div className="rlogo-sub">Service Inspection Report</div></div>
+      <div className="rmeta">{[['Property',ri.property],['Technician',ri.technician],['Date',ri.date],['Next Visit',ri.nextVisit],['Machine',ri.model?.join(' + ')],['Serial #',ri.serial]].map(([l,v])=><div className="mi" key={l}><div className="ml">{l}</div><div className="mv">{v||'—'}</div></div>)}</div>
+      {rs.status&&<div className="rstatus" style={{background:sc+'18',border:`1px solid ${sc}40`}}><div><div style={{fontSize:9,color:C.muted,textTransform:'uppercase',letterSpacing:1.5}}>Status</div><div style={{fontSize:20,fontFamily:'Space Grotesk',fontWeight:700,color:sc}}>{rs.status}</div></div><div style={{textAlign:'right'}}><div style={{fontSize:9,color:C.muted,textTransform:'uppercase',letterSpacing:1.5}}>Risk</div><div style={{fontSize:20,fontFamily:'Space Grotesk',fontWeight:700,color:sc}}>{rs.risk||'—'}</div></div></div>}
       {rs.action&&<div style={{background:C.attention+'15',border:`1px solid ${C.attention}40`,borderRadius:8,padding:'10px 13px',marginBottom:14,fontSize:13,color:C.attention}}><strong>Action Required:</strong> {rs.action}</div>}
-      {rsp&&<>
-        <Section title="SP50 — Filtration & Cleaning" rows={[['Filter Bag',rsp.filterBag],['HEPA Filter',rsp.hepaFilter],['Roller Brush',rsp.rollerBrush],['Trash Tray',rsp.trashTray],['Tray Filter',rsp.trayFilter]]}/>
-        <Section title="SP50 — Mechanical / Electrical" rows={[['Chassis',rsp.chassis],['Under Machine',rsp.underMachine],['Body',rsp.body],['Movement',rsp.manualMove],['Charging',rsp.chargingSys],['Charge Port',rsp.chargePort],['Camera/Lidar',rsp.camera],['Lights',rsp.lights],['Firmware',rsp.firmware]]}/>
-        <Section title="SP50 — Diagnostics" rows={[['4G',rsp.g4g],['IMU',rsp.imu],['RB Lift',rsp.rollerLift],['RB RPM',rsp.rbRpm],['Vac Motor',rsp.vacMotor],['Side Brush',rsp.sideBrush],['Baffle Freq',rsp.baffleFreq]]}/>
-      </>}
-      {rl&&<>
-        <Section title="L50 — Fluid & Recovery" rows={[['Recovery Tank',rl.recoveryTank],['Drain Filter',rl.drainFilter],['Squeegee',rl.squeegee],['Vac Hose',rl.vacHose]]}/>
-        <Section title="L50 — Pads & Automation" rows={[['Filter Bag',rl.filterBag],['Mag Pad Holders',rl.magPad],['Fresh Sensor',rl.freshSensor],['Auto Drain',rl.autoDrain],['Auto Fill',rl.autoFill]]}/>
-        <Section title="L50 — Mechanical / Electrical" rows={[['Chassis',rl.chassis],['Under Machine',rl.underMachine],['Body',rl.body],['Movement',rl.manualMove],['Charging',rl.chargingSys],['Charge Port',rl.chargePort],['Camera/Lidar',rl.camera],['Lights',rl.lights],['Firmware',rl.firmware]]}/>
-      </>}
-      {rn&&<div className="rsec"><div className="rsect">Technician Notes</div><div style={{fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{rn}</div></div>}
+      {rsp&&<><Section title="SP50 — Filtration & Cleaning" rows={[['Filter Bag',rsp.filterBag],['HEPA Filter',rsp.hepaFilter],['Roller Brush',rsp.rollerBrush],['Trash Tray',rsp.trashTray],['Tray Filter',rsp.trayFilter]]}/><Section title="SP50 — Mechanical / Electrical" rows={[['Chassis',rsp.chassis],['Under Machine',rsp.underMachine],['Body',rsp.body],['Movement',rsp.manualMove],['Charging',rsp.chargingSys],['Charge Port',rsp.chargePort],['Camera/Lidar',rsp.camera],['Lights',rsp.lights],['Firmware',rsp.firmware]]}/><Section title="SP50 — Diagnostics" rows={[['4G',rsp.g4g],['IMU',rsp.imu],['RB Lift',rsp.rollerLift],['RB RPM',rsp.rbRpm],['Vac Motor',rsp.vacMotor],['Side Brush',rsp.sideBrush],['Baffle Freq',rsp.baffleFreq]]}/></>}
+      {rl&&<><Section title="L50 — Fluid & Recovery" rows={[['Recovery Tank',rl.recoveryTank],['Drain Filter',rl.drainFilter],['Squeegee',rl.squeegee],['Vac Hose',rl.vacHose]]}/><Section title="L50 — Pads & Automation" rows={[['Filter Bag',rl.filterBag],['Mag Pad Holders',rl.magPad],['Fresh Sensor',rl.freshSensor],['Auto Drain',rl.autoDrain],['Auto Fill',rl.autoFill]]}/><Section title="L50 — Mechanical / Electrical" rows={[['Chassis',rl.chassis],['Under Machine',rl.underMachine],['Body',rl.body],['Movement',rl.manualMove],['Charging',rl.chargingSys],['Charge Port',rl.chargePort],['Camera/Lidar',rl.camera],['Lights',rl.lights],['Firmware',rl.firmware]]}/></>}
+      {rn&&<div className="rsec"><div className="rsect">Tech Notes</div><div style={{fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{rn}</div></div>}
       <div className="sig"><span>Tech: {ri.technician||'___________________'}</span><span>Client: ___________________</span></div>
     </div>
   );
 };
 
+// ── Service Report preview ────────────────────────────────────────────────────
+const SRPreview=({sr})=>(
+  <div className="receipt-preview">
+    <div className="rh"><div className="rlogo">MBody <span>AI</span></div><div className="rlogo-sub" style={{color:C.attention}}>Machine Service & Repair Report</div></div>
+    <div className="rmeta">{[['Date',sr.date],['Technician',sr.technician],['Property',sr.property],['Unit/Location',sr.unit],['Machine',sr.machineName],['Serial #',sr.serial]].map(([l,v])=><div className="mi" key={l}><div className="ml">{l}</div><div className="mv">{v||'—'}</div></div>)}</div>
+    {sr.linkedComponent&&<div className="linked-badge">🔗 Flagged: {sr.linkedComponent}</div>}
+    {sr.issueReported&&<div className="rsec"><div className="rsect">Issue Reported</div><div style={{fontSize:13,lineHeight:1.6}}>{sr.issueReported}</div></div>}
+    {sr.workPerformed&&<div className="rsec"><div className="rsect">Work Performed</div><div style={{fontSize:13,lineHeight:1.6}}>{sr.workPerformed}</div></div>}
+    {sr.parts?.length>0&&<div className="rsec"><div className="rsect">Parts Replaced</div>{sr.parts.map((p,i)=><div className="rrow" key={i}><div className="ri">{p.name||'—'}{p.number?<span style={{color:C.muted,fontSize:11,marginLeft:6}}>P/N: {p.number}</span>:''}</div><span style={{fontSize:12,color:C.accent,fontWeight:700}}>×{p.qty||1}</span></div>)}</div>}
+    {(sr.startTime||sr.finishTime||sr.totalDowntime)&&<div className="rsec"><div className="rsect">Time Log</div>{sr.startTime&&<div className="rrow"><div className="ri">Start Time</div><span style={{fontSize:12}}>{sr.startTime}</span></div>}{sr.finishTime&&<div className="rrow"><div className="ri">Finish Time</div><span style={{fontSize:12}}>{sr.finishTime}</span></div>}{sr.totalDowntime&&<div className="rrow"><div className="ri">Total Downtime</div><span style={{fontSize:12,color:C.attention,fontWeight:600}}>{sr.totalDowntime}</span></div>}</div>}
+    {sr.testingVerification&&<div className="rsec"><div className="rsect">Testing / Verification</div><div style={{fontSize:13,lineHeight:1.6}}>{sr.testingVerification}</div></div>}
+    {sr.additionalNotes&&<div className="rsec"><div className="rsect">Additional Notes</div><div style={{fontSize:13,lineHeight:1.6}}>{sr.additionalNotes}</div></div>}
+    <div className="sig"><span>Tech: {sr.technician||'___________________'}</span><span>Customer/Manager: ___________________</span></div>
+  </div>
+);
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App(){
+  const[tab,setTab]=useState('inspections'); // inspections | service
   const[step,setStep]=useState('home');
-  const[history,setHistory]=useState(()=>loadHistory());
+  const[inspHistory,setInspHistory]=useState(()=>loadLS(INSP_KEY));
+  const[srHistory,setSRHistory]=useState(()=>loadLS(SR_KEY));
   const[toast,setToast]=useState(null);
-  const[viewingRecord,setViewingRecord]=useState(null);
   const[pdfLoading,setPdfLoading]=useState(false);
 
+  // Inspection state
+  const[viewingInsp,setViewingInsp]=useState(null);
   const[info,setInfo]=useState({property:'',technician:'',date:new Date().toISOString().split('T')[0],nextVisit:'',model:[],serial:'',firmware:''});
   const[summary,setSummary]=useState({status:'',risk:'',action:''});
   const[sp50,setSp50]=useState(initSP50());
   const[l50,setL50]=useState(initL50());
   const[techNotes,setTechNotes]=useState('');
+
+  // Service report state
+  const[sr,setSR]=useState(initSR());
+  const[viewingSR,setViewingSR]=useState(null);
+
+  // A-prompt modal
+  const[showAPrompt,setShowAPrompt]=useState(false);
+  const[promptComponent,setPromptComponent]=useState('');
+  const[currentInspId,setCurrentInspId]=useState(null);
 
   const hasSP50=info.model.includes('SP50');
   const hasL50=info.model.includes('L50');
@@ -550,39 +366,65 @@ export default function App(){
   const sp50set=(f,v)=>setSp50(p=>({...p,[f]:v}));
   const l50set=(f,v)=>setL50(p=>({...p,[f]:v}));
 
-  const resetForm=()=>{
-    setInfo({property:'',technician:'',date:new Date().toISOString().split('T')[0],nextVisit:'',model:[],serial:'',firmware:''});
-    setSummary({status:'',risk:'',action:''});
-    setSp50(initSP50());setL50(initL50());setTechNotes('');setViewingRecord(null);
-  };
-
   const showToast=(msg,type='ok')=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+
+  const resetInsp=()=>{setInfo({property:'',technician:'',date:new Date().toISOString().split('T')[0],nextVisit:'',model:[],serial:'',firmware:''});setSummary({status:'',risk:'',action:''});setSp50(initSP50());setL50(initL50());setTechNotes('');setViewingInsp(null);setCurrentInspId(null);};
 
   const saveInspection=()=>{
     const id='insp_'+Date.now();
     const record={id,savedAt:new Date().toISOString(),info,summary,sp50:hasSP50?sp50:null,l50:hasL50?l50:null,techNotes};
-    const updated=[record,...history];
-    setHistory(updated);saveHistory(updated);
+    const updated=[record,...inspHistory];
+    setInspHistory(updated);saveLS(INSP_KEY,updated);
+    setCurrentInspId(id);
     showToast('✓ Inspection Saved');
     return record;
   };
 
-  const deleteInspection=(id,e)=>{
-    e.stopPropagation();
-    if(!confirm('Delete this inspection?')) return;
-    const updated=history.filter(x=>x.id!==id);
-    setHistory(updated);saveHistory(updated);
+  const saveSR=(data)=>{
+    const id='sr_'+Date.now();
+    const record={...data,id,savedAt:new Date().toISOString()};
+    const updated=[record,...srHistory];
+    setSRHistory(updated);saveLS(SR_KEY,updated);
+    showToast('✓ Service Report Saved');
+    return record;
+  };
+
+  const deleteInsp=(id,e)=>{e.stopPropagation();if(!confirm('Delete?'))return;const u=inspHistory.filter(x=>x.id!==id);setInspHistory(u);saveLS(INSP_KEY,u);};
+  const deleteSR=(id,e)=>{e.stopPropagation();if(!confirm('Delete?'))return;const u=srHistory.filter(x=>x.id!==id);setSRHistory(u);saveLS(SR_KEY,u);};
+
+  const handleAttention=(label)=>{
+    setPromptComponent(label);
+    setShowAPrompt(true);
+  };
+
+  const handleStartSRFromPrompt=()=>{
+    setShowAPrompt(false);
+    // Pre-fill SR with current inspection info
+    setSR({
+      ...initSR(),
+      date:info.date||new Date().toISOString().split('T')[0],
+      technician:info.technician||'',
+      property:info.property||'',
+      machineName:info.model?.join(' + ')||'',
+      serial:info.serial||'',
+      linkedComponent:promptComponent,
+      linkedInspectionId:currentInspId||'',
+    });
+    setTab('service');
+    setStep('sr_form');
   };
 
   const currentRecord=()=>({id:'live',savedAt:new Date().toISOString(),info,summary,sp50:hasSP50?sp50:null,l50:hasL50?l50:null,techNotes});
+  const handleInspPDF=async(r)=>{setPdfLoading(true);try{exportInspectionPDF(r);}catch{showToast('PDF failed','err');}setTimeout(()=>setPdfLoading(false),1500);};
+  const handleSRPDF=async(r)=>{setPdfLoading(true);try{exportServicePDF(r);}catch{showToast('PDF failed','err');}setTimeout(()=>setPdfLoading(false),1500);};
 
-  const handlePDF=async(record)=>{
-    setPdfLoading(true);
-    try{exportPDF(record);}catch(e){showToast('PDF export failed','err');}
-    setTimeout(()=>setPdfLoading(false),1500);
+  const navTo=(t)=>{setTab(t);setStep('home');};
+
+  const stepLabel=()=>{
+    if(tab==='service'){if(step==='sr_form') return 'NEW REPORT';if(step==='sr_receipt') return 'REPORT';return 'SERVICE';}
+    const m={home:'HOME',intake:'SETUP',sp50:'SP50',l50:'L50',summary:'SUMMARY',receipt:'REPORT'};
+    return m[step]||'';
   };
-
-  const labels={home:'HOME',intake:'SETUP',sp50:'SP50',l50:'L50',summary:'SUMMARY',receipt:'REPORT'};
 
   return(
     <>
@@ -592,190 +434,264 @@ export default function App(){
         {/* Header */}
         <div className="header">
           <div className="header-inner">
-            <div onClick={()=>{resetForm();setStep('home');}} style={{cursor:'pointer'}}>
-              <Logo/>
-            </div>
-            <div className="step-badge">{labels[step]}</div>
+            <Logo onClick={()=>{resetInsp();setSR(initSR());setStep('home');}}/>
+            <div className="step-badge">{stepLabel()}</div>
           </div>
         </div>
 
         {toast&&<div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
-        {/* ── HOME ── */}
-        {step==='home'&&<div className="content">
-          <button className="btn" style={{marginTop:0}} onClick={()=>{resetForm();setStep('intake');}}>+ New Inspection</button>
-          <div className="sec">Saved Inspections ({history.length})</div>
-          {history.length===0
-            ?<div className="empty"><div className="empty-icon">📋</div><div style={{fontWeight:600,fontSize:15}}>No inspections yet</div><div style={{fontSize:12,marginTop:6}}>Complete your first inspection to see it here.</div></div>
-            :history.map(rec=>(
-              <div className="hcard" key={rec.id}>
-                <div className="hcard-top">
-                  <div>
-                    <div className="hcard-prop">{rec.info.property||'Unnamed Property'}</div>
-                    <div className="hcard-date">{new Date(rec.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · {new Date(rec.savedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div>
+        {/* A-prompt modal */}
+        {showAPrompt&&(
+          <div className="modal-overlay" onClick={()=>setShowAPrompt(false)}>
+            <div className="modal-box" onClick={e=>e.stopPropagation()}>
+              <div className="modal-title">⚠ Attention Flagged</div>
+              <div className="modal-sub">You marked a component as needing attention. Do you want to file a Service & Repair Report for this?</div>
+              <div className="modal-component">🔧 {promptComponent}</div>
+              <div className="modal-btns">
+                <button className="modal-btn-yes" onClick={handleStartSRFromPrompt}>Yes, File Report</button>
+                <button className="modal-btn-no" onClick={()=>setShowAPrompt(false)}>Skip for Now</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ════════════ INSPECTIONS TAB ════════════ */}
+        {tab==='inspections'&&<>
+
+          {/* HOME */}
+          {step==='home'&&<div className="content">
+            <button className="btn" style={{marginTop:0}} onClick={()=>{resetInsp();setStep('intake');}}>+ New Inspection</button>
+            <div className="sec">Saved Inspections ({inspHistory.length})</div>
+            {inspHistory.length===0
+              ?<div className="empty"><div style={{fontSize:36,marginBottom:10}}>📋</div><div style={{fontWeight:600}}>No inspections yet</div></div>
+              :inspHistory.map(rec=>(
+                <div className="hcard" key={rec.id}>
+                  <div className="hcard-top">
+                    <div><div className="hcard-prop">{rec.info.property||'Unnamed Property'}</div><div className="hcard-date">{new Date(rec.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · {new Date(rec.savedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></div>
+                    {rec.summary.status&&<span className={`badge ${getColor(rec.summary.status==='Good'?'Pass':rec.summary.status==='Monitor'?'M':'Fail')}`}>{rec.summary.status}</span>}
                   </div>
-                  {rec.summary.status&&<span className={`badge ${getColor(rec.summary.status==='Good'?'Pass':rec.summary.status==='Monitor'?'M':'Fail')}`}>{rec.summary.status}</span>}
+                  <div className="hcard-meta"><span>🤖 {rec.info.model?.join(' + ')||'—'}</span><span>S/N: {rec.info.serial||'—'}</span><span>👤 {rec.info.technician||'—'}</span></div>
+                  <div className="hcard-actions">
+                    <div className="hbtn" onClick={()=>{setViewingInsp(rec);setStep('receipt');}}>View</div>
+                    <div className="hbtn" onClick={()=>handleInspPDF(rec)}>⬇ PDF</div>
+                    <div className="hbtn" onClick={e=>deleteInsp(rec.id,e)}>Delete</div>
+                  </div>
                 </div>
-                <div className="hcard-meta">
-                  <span>🤖 {rec.info.model?.join(' + ')||'—'}</span>
-                  <span>S/N: {rec.info.serial||'—'}</span>
-                  <span>👤 {rec.info.technician||'—'}</span>
-                </div>
-                <div className="hcard-actions">
-                  <div className="hbtn" onClick={()=>{setViewingRecord(rec);setStep('receipt');}}>View</div>
-                  <div className="hbtn" onClick={()=>handlePDF(rec)}>⬇ PDF</div>
-                  <div className="hbtn" onClick={()=>emailReport(rec)}>📧 Email</div>
-                  <div className="hbtn" onClick={e=>deleteInspection(rec.id,e)}>Delete</div>
-                </div>
-              </div>
-            ))}
-        </div>}
-
-        {/* ── INTAKE ── */}
-        {step==='intake'&&<div className="content">
-          <div className="sec">Visit Information</div>
-          <div className="card">
-            <div className="fr">
-              <div className="fl"><label>Property</label><input value={info.property} onChange={e=>setInfo(p=>({...p,property:e.target.value}))} placeholder="Property name"/></div>
-              <div className="fl"><label>Technician</label><input value={info.technician} onChange={e=>setInfo(p=>({...p,technician:e.target.value}))} placeholder="Your name"/></div>
-            </div>
-            <div className="fr">
-              <div className="fl"><label>Date</label><input type="date" value={info.date} onChange={e=>setInfo(p=>({...p,date:e.target.value}))}/></div>
-              <div className="fl"><label>Next Visit</label><input type="date" value={info.nextVisit} onChange={e=>setInfo(p=>({...p,nextVisit:e.target.value}))}/></div>
-            </div>
-            <div className="fr">
-              <div className="fl"><label>Serial Number</label><input value={info.serial} onChange={e=>setInfo(p=>({...p,serial:e.target.value}))} placeholder="S/N"/></div>
-              <div className="fl"><label>Firmware</label><input value={info.firmware} onChange={e=>setInfo(p=>({...p,firmware:e.target.value}))} placeholder="v0.0.0"/></div>
-            </div>
-          </div>
-          <div className="sec">Machine Model</div>
-          <div className="card">
-            <div className="tabs">
-              <div className={`tab ${info.model.includes('SP50')?'on':''}`} onClick={()=>toggleModel('SP50')}>SP50</div>
-              <div className={`tab ${info.model.includes('L50')?'on':''}`} onClick={()=>toggleModel('L50')}>L50</div>
-            </div>
-            <div style={{fontSize:12,color:C.muted,textAlign:'center'}}>Tap to select one or both</div>
-          </div>
-          <button className="btn" disabled={info.model.length===0} onClick={()=>setStep(hasSP50?'sp50':'l50')}>Begin Inspection →</button>
-          <button className="btn2" onClick={()=>setStep('home')}>← Back</button>
-        </div>}
-
-        {/* ── SP50 ── */}
-        {step==='sp50'&&<div className="content">
-          {hasSP50&&hasL50&&<div className="tabs"><div className="tab on">SP50</div><div className="tab" onClick={()=>setStep('l50')}>L50</div></div>}
-          <div className="sec">Filtration & Cleaning</div>
-          <div className="card">
-            <IRow label="Filter Bag" options={GMA} field="filterBag" value={sp50.filterBag} onChange={sp50set}/>
-            <IRow label="HEPA Filter" options={GMA} field="hepaFilter" value={sp50.hepaFilter} onChange={sp50set}/>
-            <IRow label="Roller Brush" options={GMA} field="rollerBrush" value={sp50.rollerBrush} onChange={sp50set}/>
-            <IRow label="Trash Tray" options={GMA} field="trashTray" value={sp50.trashTray} onChange={sp50set}/>
-            <IRow label="Tray Filter" options={GMA} field="trayFilter" value={sp50.trayFilter} onChange={sp50set}/>
-          </div>
-          <div className="sec">Mechanical / Electrical / Sensors</div>
-          <div className="card">
-            <IRow label="Chassis / Frame" options={GMA} field="chassis" value={sp50.chassis} onChange={sp50set}/>
-            <IRow label="Under Machine" options={CDmg} field="underMachine" value={sp50.underMachine} onChange={sp50set}/>
-            <IRow label="Body Condition" options={Body} field="body" value={sp50.body} onChange={sp50set}/>
-            <IRow label="Manual Movement" options={MovOpts} field="manualMove" value={sp50.manualMove} onChange={sp50set}/>
-            <IRow label="Charging System" options={PF} field="chargingSys" value={sp50.chargingSys} onChange={sp50set}/>
-            <IRow label="Charge Port" options={PF} field="chargePort" value={sp50.chargePort} onChange={sp50set}/>
-            <IRow label="Camera / Lidar" options={CamOpts} field="camera" value={sp50.camera} onChange={sp50set}/>
-            <IRow label="Lights" options={WPF} field="lights" value={sp50.lights} onChange={sp50set}/>
-            <IRow label="Firmware" options={OKUF} field="firmware" value={sp50.firmware} onChange={sp50set}/>
-          </div>
-          <div className="sec">Diagnostics</div>
-          <div className="card">
-            <IRow label="4G Check" options={GMA} field="g4g" value={sp50.g4g} onChange={sp50set}/>
-            <IRow label="IMU" options={GMA} field="imu" value={sp50.imu} onChange={sp50set}/>
-            <IRow label="Roller Brush Lift Height" options={GMA} field="rollerLift" value={sp50.rollerLift} onChange={sp50set}/>
-            <IRow label="RB RPM" options={GMA} field="rbRpm" value={sp50.rbRpm} onChange={sp50set}/>
-            <IRow label="Vac Motor Speed" options={GMA} field="vacMotor" value={sp50.vacMotor} onChange={sp50set}/>
-            <IRow label="Side Brush RPM" options={GMA} field="sideBrush" value={sp50.sideBrush} onChange={sp50set}/>
-            <IRow label="Baffle Movement Freq" options={GMA} field="baffleFreq" value={sp50.baffleFreq} onChange={sp50set}/>
-          </div>
-          <div className="sec">Battery Check</div>
-          <div className="card">
-            <div className="bg">
-              {[['Health (%)','battHealth'],['Voltage (V)','battVoltage'],['Current (A)','battCurrent'],['Left Motor Load','leftMotor'],['Right Motor Load','rightMotor']].map(([lbl,key])=>(
-                <div className="bf" key={key}><label>{lbl}</label><input type="number" placeholder="—" value={sp50[key]} onChange={e=>setSp50(p=>({...p,[key]:e.target.value}))}/></div>
               ))}
-            </div>
-          </div>
-          {hasL50?<button className="btn" onClick={()=>setStep('l50')}>Continue to L50 →</button>:<button className="btn" onClick={()=>setStep('summary')}>Review & Summary →</button>}
-        </div>}
+          </div>}
 
-        {/* ── L50 ── */}
-        {step==='l50'&&<div className="content">
-          {hasSP50&&hasL50&&<div className="tabs"><div className="tab" onClick={()=>setStep('sp50')}>SP50</div><div className="tab on">L50</div></div>}
-          <div className="sec">Fluid & Recovery System</div>
-          <div className="card">
-            <IRow label="Recovery Tank" options={RLeak} field="recoveryTank" value={l50.recoveryTank} onChange={l50set}/>
-            <IRow label="Drain Filter" options={DrainOpts} field="drainFilter" value={l50.drainFilter} onChange={l50set}/>
-            <IRow label="Squeegee" options={SqOpts} field="squeegee" value={l50.squeegee} onChange={l50set}/>
-            <IRow label="Vacuum Hose" options={VacOpts} field="vacHose" value={l50.vacHose} onChange={l50set}/>
-          </div>
-          <div className="sec">Pads, Sensors & Automation</div>
-          <div className="card">
-            <IRow label="Filter Bag" options={GMA} field="filterBag" value={l50.filterBag} onChange={l50set}/>
-            <IRow label="Mag Pad Holders" options={MagOpts} field="magPad" value={l50.magPad} onChange={l50set}/>
-            <IRow label="Fresh Water Sensor" options={SensorOpts} field="freshSensor" value={l50.freshSensor} onChange={l50set}/>
-            <IRow label="Auto Drain" options={WF} field="autoDrain" value={l50.autoDrain} onChange={l50set}/>
-            <IRow label="Auto Fill" options={WF} field="autoFill" value={l50.autoFill} onChange={l50set}/>
-          </div>
-          <div className="sec">Mechanical / Electrical / Sensors</div>
-          <div className="card">
-            <IRow label="Chassis / Frame" options={GMA} field="chassis" value={l50.chassis} onChange={l50set}/>
-            <IRow label="Under Machine" options={CDmg} field="underMachine" value={l50.underMachine} onChange={l50set}/>
-            <IRow label="Body Condition" options={Body} field="body" value={l50.body} onChange={l50set}/>
-            <IRow label="Manual Movement" options={MovOpts} field="manualMove" value={l50.manualMove} onChange={l50set}/>
-            <IRow label="Charging System" options={PF} field="chargingSys" value={l50.chargingSys} onChange={l50set}/>
-            <IRow label="Charge Port" options={PF} field="chargePort" value={l50.chargePort} onChange={l50set}/>
-            <IRow label="Camera / Lidar" options={CamOpts} field="camera" value={l50.camera} onChange={l50set}/>
-            <IRow label="Lights" options={WPF} field="lights" value={l50.lights} onChange={l50set}/>
-            <IRow label="Firmware" options={OKUF} field="firmware" value={l50.firmware} onChange={l50set}/>
-          </div>
-          <button className="btn" onClick={()=>setStep('summary')}>Review & Summary →</button>
-        </div>}
+          {/* INTAKE */}
+          {step==='intake'&&<div className="content">
+            <div className="sec">Visit Information</div>
+            <div className="card">
+              <div className="fr"><div className="fl"><label>Property</label><input value={info.property} onChange={e=>setInfo(p=>({...p,property:e.target.value}))} placeholder="Property name"/></div><div className="fl"><label>Technician</label><input value={info.technician} onChange={e=>setInfo(p=>({...p,technician:e.target.value}))} placeholder="Your name"/></div></div>
+              <div className="fr"><div className="fl"><label>Date</label><input type="date" value={info.date} onChange={e=>setInfo(p=>({...p,date:e.target.value}))}/></div><div className="fl"><label>Next Visit</label><input type="date" value={info.nextVisit} onChange={e=>setInfo(p=>({...p,nextVisit:e.target.value}))}/></div></div>
+              <div className="fr"><div className="fl"><label>Serial Number</label><input value={info.serial} onChange={e=>setInfo(p=>({...p,serial:e.target.value}))} placeholder="S/N"/></div><div className="fl"><label>Firmware</label><input value={info.firmware} onChange={e=>setInfo(p=>({...p,firmware:e.target.value}))} placeholder="v0.0.0"/></div></div>
+            </div>
+            <div className="sec">Machine Model</div>
+            <div className="card">
+              <div className="tabs"><div className={`tab ${info.model.includes('SP50')?'on':''}`} onClick={()=>toggleModel('SP50')}>SP50</div><div className={`tab ${info.model.includes('L50')?'on':''}`} onClick={()=>toggleModel('L50')}>L50</div></div>
+              <div style={{fontSize:12,color:C.muted,textAlign:'center'}}>Tap to select one or both</div>
+            </div>
+            <button className="btn" disabled={info.model.length===0} onClick={()=>setStep(hasSP50?'sp50':'l50')}>Begin Inspection →</button>
+            <button className="btn2" onClick={()=>setStep('home')}>← Back</button>
+          </div>}
 
-        {/* ── SUMMARY ── */}
-        {step==='summary'&&<div className="content">
-          <div className="sec">Executive Summary</div>
-          <div className="card">
-            <div style={{marginBottom:16}}>
-              <span className="field-label">Overall Status</span>
-              <div className="ss">
-                {[['Good','sg'],['Monitor','sm'],['Attention','sa']].map(([s,cls])=><div key={s} className={`sb ${summary.status===s?cls:''}`} onClick={()=>setSummary(p=>({...p,status:s}))}>{s}</div>)}
-              </div>
+          {/* SP50 */}
+          {step==='sp50'&&<div className="content">
+            {hasSP50&&hasL50&&<div className="tabs"><div className="tab on">SP50</div><div className="tab" onClick={()=>setStep('l50')}>L50</div></div>}
+            <div className="sec">Filtration & Cleaning</div>
+            <div className="card">
+              <IRow label="Filter Bag" options={GMA} field="filterBag" value={sp50.filterBag} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="HEPA Filter" options={GMA} field="hepaFilter" value={sp50.hepaFilter} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Roller Brush" options={GMA} field="rollerBrush" value={sp50.rollerBrush} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Trash Tray" options={GMA} field="trashTray" value={sp50.trashTray} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Tray Filter" options={GMA} field="trayFilter" value={sp50.trayFilter} onChange={sp50set} onAttention={handleAttention}/>
             </div>
-            <div style={{marginBottom:16}}>
-              <span className="field-label">Risk Level</span>
-              <div className="ss">
-                {[['None','sn'],['Low','sl'],['Med','sme'],['High','sh']].map(([r,cls])=><div key={r} className={`sb ${summary.risk===r?cls:''}`} onClick={()=>setSummary(p=>({...p,risk:r}))}>{r}</div>)}
-              </div>
+            <div className="sec">Mechanical / Electrical / Sensors</div>
+            <div className="card">
+              <IRow label="Chassis / Frame" options={GMA} field="chassis" value={sp50.chassis} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Under Machine" options={CDmg} field="underMachine" value={sp50.underMachine} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Body Condition" options={Body} field="body" value={sp50.body} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Manual Movement" options={MovOpts} field="manualMove" value={sp50.manualMove} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Charging System" options={PF} field="chargingSys" value={sp50.chargingSys} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Charge Port" options={PF} field="chargePort" value={sp50.chargePort} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Camera / Lidar" options={CamOpts} field="camera" value={sp50.camera} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Lights" options={WPF} field="lights" value={sp50.lights} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Firmware" options={OKUF} field="firmware" value={sp50.firmware} onChange={sp50set} onAttention={handleAttention}/>
             </div>
-            <div className="fl">
-              <label>Action Required</label>
-              <input value={summary.action} onChange={e=>setSummary(p=>({...p,action:e.target.value}))} placeholder="Describe any required actions..." style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:'10px 13px',borderRadius:8,fontSize:14,fontFamily:'Inter',outline:'none'}}/>
+            <div className="sec">Diagnostics</div>
+            <div className="card">
+              <IRow label="4G Check" options={GMA} field="g4g" value={sp50.g4g} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="IMU" options={GMA} field="imu" value={sp50.imu} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Roller Brush Lift Height" options={GMA} field="rollerLift" value={sp50.rollerLift} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="RB RPM" options={GMA} field="rbRpm" value={sp50.rbRpm} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Vac Motor Speed" options={GMA} field="vacMotor" value={sp50.vacMotor} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Side Brush RPM" options={GMA} field="sideBrush" value={sp50.sideBrush} onChange={sp50set} onAttention={handleAttention}/>
+              <IRow label="Baffle Movement Freq" options={GMA} field="baffleFreq" value={sp50.baffleFreq} onChange={sp50set} onAttention={handleAttention}/>
             </div>
-          </div>
-          <div className="sec">Technician Notes</div>
-          <div className="card"><textarea placeholder="Diagnosis, observations, recommendations..." value={techNotes} onChange={e=>setTechNotes(e.target.value)}/></div>
-          <button className="btn" onClick={()=>{saveInspection();setViewingRecord(null);setStep('receipt');}}>Save & Generate Report →</button>
-          <button className="btn2" onClick={()=>setStep(hasSP50?'sp50':'l50')}>← Back</button>
-        </div>}
+            <div className="sec">Battery Check</div>
+            <div className="card">
+              <div className="bg">{[['Health (%)','battHealth'],['Voltage (V)','battVoltage'],['Current (A)','battCurrent'],['Left Motor Load','leftMotor'],['Right Motor Load','rightMotor']].map(([lbl,key])=>(
+                <div className="bf" key={key}><label>{lbl}</label><input type="number" placeholder="—" value={sp50[key]} onChange={e=>setSp50(p=>({...p,[key]:e.target.value}))}/></div>
+              ))}</div>
+            </div>
+            {hasL50?<button className="btn" onClick={()=>setStep('l50')}>Continue to L50 →</button>:<button className="btn" onClick={()=>setStep('summary')}>Review & Summary →</button>}
+          </div>}
 
-        {/* ── RECEIPT ── */}
-        {step==='receipt'&&<div className="content">
-          <ReceiptPreview record={viewingRecord||currentRecord()}/>
-          <button className="btn-pdf" disabled={pdfLoading} onClick={()=>handlePDF(viewingRecord||currentRecord())}>
-            {pdfLoading?'Generating PDF...':'⬇ Download PDF'}
+          {/* L50 */}
+          {step==='l50'&&<div className="content">
+            {hasSP50&&hasL50&&<div className="tabs"><div className="tab" onClick={()=>setStep('sp50')}>SP50</div><div className="tab on">L50</div></div>}
+            <div className="sec">Fluid & Recovery System</div>
+            <div className="card">
+              <IRow label="Recovery Tank" options={RLeak} field="recoveryTank" value={l50.recoveryTank} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Drain Filter" options={DrainOpts} field="drainFilter" value={l50.drainFilter} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Squeegee" options={SqOpts} field="squeegee" value={l50.squeegee} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Vacuum Hose" options={VacOpts} field="vacHose" value={l50.vacHose} onChange={l50set} onAttention={handleAttention}/>
+            </div>
+            <div className="sec">Pads, Sensors & Automation</div>
+            <div className="card">
+              <IRow label="Filter Bag" options={GMA} field="filterBag" value={l50.filterBag} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Mag Pad Holders" options={MagOpts} field="magPad" value={l50.magPad} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Fresh Water Sensor" options={SensorOpts} field="freshSensor" value={l50.freshSensor} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Auto Drain" options={WF} field="autoDrain" value={l50.autoDrain} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Auto Fill" options={WF} field="autoFill" value={l50.autoFill} onChange={l50set} onAttention={handleAttention}/>
+            </div>
+            <div className="sec">Mechanical / Electrical / Sensors</div>
+            <div className="card">
+              <IRow label="Chassis / Frame" options={GMA} field="chassis" value={l50.chassis} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Under Machine" options={CDmg} field="underMachine" value={l50.underMachine} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Body Condition" options={Body} field="body" value={l50.body} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Manual Movement" options={MovOpts} field="manualMove" value={l50.manualMove} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Charging System" options={PF} field="chargingSys" value={l50.chargingSys} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Charge Port" options={PF} field="chargePort" value={l50.chargePort} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Camera / Lidar" options={CamOpts} field="camera" value={l50.camera} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Lights" options={WPF} field="lights" value={l50.lights} onChange={l50set} onAttention={handleAttention}/>
+              <IRow label="Firmware" options={OKUF} field="firmware" value={l50.firmware} onChange={l50set} onAttention={handleAttention}/>
+            </div>
+            <button className="btn" onClick={()=>setStep('summary')}>Review & Summary →</button>
+          </div>}
+
+          {/* SUMMARY */}
+          {step==='summary'&&<div className="content">
+            <div className="sec">Executive Summary</div>
+            <div className="card">
+              <div style={{marginBottom:16}}><span className="field-label">Overall Status</span><div className="ss">{[['Good','sg'],['Monitor','sm'],['Attention','sa']].map(([s,cls])=><div key={s} className={`sb ${summary.status===s?cls:''}`} onClick={()=>setSummary(p=>({...p,status:s}))}>{s}</div>)}</div></div>
+              <div style={{marginBottom:16}}><span className="field-label">Risk Level</span><div className="ss">{[['None','sn'],['Low','sl'],['Med','sme'],['High','sh']].map(([r,cls])=><div key={r} className={`sb ${summary.risk===r?cls:''}`} onClick={()=>setSummary(p=>({...p,risk:r}))}>{r}</div>)}</div></div>
+              <div className="fl"><label>Action Required</label><input value={summary.action} onChange={e=>setSummary(p=>({...p,action:e.target.value}))} placeholder="Describe any required actions..." style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:'10px 13px',borderRadius:8,fontSize:14,fontFamily:'Inter',outline:'none'}}/></div>
+            </div>
+            <div className="sec">Technician Notes</div>
+            <div className="card"><textarea placeholder="Diagnosis, observations, recommendations..." value={techNotes} onChange={e=>setTechNotes(e.target.value)}/></div>
+            <button className="btn" onClick={()=>{saveInspection();setViewingInsp(null);setStep('receipt');}}>Save & Generate Report →</button>
+            <button className="btn2" onClick={()=>setStep(hasSP50?'sp50':'l50')}>← Back</button>
+          </div>}
+
+          {/* RECEIPT */}
+          {step==='receipt'&&<div className="content">
+            <InspPreview record={viewingInsp||currentRecord()}/>
+            <button className="btn-pdf" disabled={pdfLoading} onClick={()=>handleInspPDF(viewingInsp||currentRecord())}>{pdfLoading?'Generating...':'⬇ Download PDF'}</button>
+            <button className="btn-email" onClick={()=>{}}>📧 Email Report</button>
+            <button className="btn2" onClick={()=>{setViewingInsp(null);setStep('home');}}>← Home</button>
+            {!viewingInsp&&<button className="btn2" onClick={()=>setStep('summary')}>← Edit Summary</button>}
+          </div>}
+
+        </>}
+
+        {/* ════════════ SERVICE REPORTS TAB ════════════ */}
+        {tab==='service'&&<>
+
+          {/* HOME */}
+          {step==='home'&&<div className="content">
+            <button className="btn" style={{marginTop:0}} onClick={()=>{setSR(initSR());setStep('sr_form');}}>+ New Service Report</button>
+            <div className="sec">Saved Reports ({srHistory.length})</div>
+            {srHistory.length===0
+              ?<div className="empty"><div style={{fontSize:36,marginBottom:10}}>🔧</div><div style={{fontWeight:600}}>No service reports yet</div><div style={{fontSize:12,marginTop:6}}>File one from here or by tapping "A" during an inspection.</div></div>
+              :srHistory.map(rec=>(
+                <div className="hcard sr-card" key={rec.id}>
+                  <div className="hcard-top">
+                    <div><div className="hcard-prop">{rec.property||'Unnamed Property'}</div><div className="hcard-date">{new Date(rec.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} · {new Date(rec.savedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></div>
+                    <span className="badge ba">Service</span>
+                  </div>
+                  <div className="hcard-meta"><span>🤖 {rec.machineName||'—'}</span><span>S/N: {rec.serial||'—'}</span>{rec.linkedComponent&&<span style={{color:C.attention}}>⚠ {rec.linkedComponent}</span>}</div>
+                  <div className="hcard-actions">
+                    <div className="hbtn" onClick={()=>{setViewingSR(rec);setStep('sr_receipt');}}>View</div>
+                    <div className="hbtn" onClick={()=>handleSRPDF(rec)}>⬇ PDF</div>
+                    <div className="hbtn" onClick={()=>emailSR(rec)}>📧 Email</div>
+                    <div className="hbtn" onClick={e=>deleteSR(rec.id,e)}>Delete</div>
+                  </div>
+                </div>
+              ))}
+          </div>}
+
+          {/* SR FORM */}
+          {step==='sr_form'&&<div className="content">
+            {sr.linkedComponent&&<div style={{background:C.attention+'15',border:`1px solid ${C.attention}40`,borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:C.attention}}>🔗 Linked from inspection — Flagged: <strong>{sr.linkedComponent}</strong></div>}
+            <div className="sec">Machine & Visit Info</div>
+            <div className="card">
+              <div className="fr"><div className="fl"><label>Date</label><input type="date" value={sr.date} onChange={e=>setSR(p=>({...p,date:e.target.value}))}/></div><div className="fl"><label>Technician</label><input value={sr.technician} onChange={e=>setSR(p=>({...p,technician:e.target.value}))} placeholder="Your name"/></div></div>
+              <div className="fr"><div className="fl"><label>Property</label><input value={sr.property} onChange={e=>setSR(p=>({...p,property:e.target.value}))} placeholder="Property name"/></div><div className="fl"><label>Unit / Location</label><input value={sr.unit} onChange={e=>setSR(p=>({...p,unit:e.target.value}))} placeholder="Unit or area"/></div></div>
+              <div className="fr"><div className="fl"><label>Machine Name/Model</label><input value={sr.machineName} onChange={e=>setSR(p=>({...p,machineName:e.target.value}))} placeholder="e.g. SP50"/></div><div className="fl"><label>Serial Number</label><input value={sr.serial} onChange={e=>setSR(p=>({...p,serial:e.target.value}))} placeholder="S/N"/></div></div>
+            </div>
+            <div className="sec">Issue & Work</div>
+            <div className="card">
+              <div className="fl" style={{marginBottom:12}}><label>Issue Reported</label><textarea value={sr.issueReported} onChange={e=>setSR(p=>({...p,issueReported:e.target.value}))} placeholder="Describe the issue or fault found..."/></div>
+              <div className="fl"><label>Work Performed / Corrective Action</label><textarea value={sr.workPerformed} onChange={e=>setSR(p=>({...p,workPerformed:e.target.value}))} placeholder="What was done to fix it..."/></div>
+            </div>
+            <div className="sec">Parts Replaced</div>
+            <div className="card">
+              <table className="parts-table">
+                <thead><tr><th>Part Name</th><th>Part Number</th><th>Qty</th><th></th></tr></thead>
+                <tbody>
+                  {sr.parts.map((p,i)=>(
+                    <tr key={i}>
+                      <td><input value={p.name} onChange={e=>{const pts=[...sr.parts];pts[i]={...pts[i],name:e.target.value};setSR(s=>({...s,parts:pts}));}} placeholder="Part name"/></td>
+                      <td><input value={p.number} onChange={e=>{const pts=[...sr.parts];pts[i]={...pts[i],number:e.target.value};setSR(s=>({...s,parts:pts}));}} placeholder="P/N"/></td>
+                      <td><input type="number" value={p.qty} onChange={e=>{const pts=[...sr.parts];pts[i]={...pts[i],qty:e.target.value};setSR(s=>({...s,parts:pts}));}} placeholder="1"/></td>
+                      <td><button className="del-btn" onClick={()=>setSR(s=>({...s,parts:s.parts.filter((_,j)=>j!==i)}))}>×</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button className="add-part-btn" onClick={()=>setSR(s=>({...s,parts:[...s.parts,{name:'',number:'',qty:''}]}))}>+ Add Part</button>
+            </div>
+            <div className="sec">Time Log</div>
+            <div className="card">
+              <div className="fr"><div className="fl"><label>Start Time</label><input type="time" value={sr.startTime} onChange={e=>setSR(p=>({...p,startTime:e.target.value}))}/></div><div className="fl"><label>Finish Time</label><input type="time" value={sr.finishTime} onChange={e=>setSR(p=>({...p,finishTime:e.target.value}))}/></div></div>
+              <div className="fl"><label>Total Downtime</label><input value={sr.totalDowntime} onChange={e=>setSR(p=>({...p,totalDowntime:e.target.value}))} placeholder="e.g. 2 hours 30 min"/></div>
+            </div>
+            <div className="sec">Verification & Notes</div>
+            <div className="card">
+              <div className="fl" style={{marginBottom:12}}><label>Testing / Verification After Repair</label><textarea value={sr.testingVerification} onChange={e=>setSR(p=>({...p,testingVerification:e.target.value}))} placeholder="How was the repair verified..."/></div>
+              <div className="fl"><label>Additional Notes</label><textarea value={sr.additionalNotes} onChange={e=>setSR(p=>({...p,additionalNotes:e.target.value}))} placeholder="Anything else to note..."/></div>
+            </div>
+            <button className="btn" onClick={()=>{const rec=saveSR(sr);setViewingSR(null);setStep('sr_receipt');}}>Save & Generate Report →</button>
+            <button className="btn2" onClick={()=>setStep('home')}>← Cancel</button>
+          </div>}
+
+          {/* SR RECEIPT */}
+          {step==='sr_receipt'&&<div className="content">
+            <SRPreview sr={viewingSR||sr}/>
+            <button className="btn-pdf" disabled={pdfLoading} onClick={()=>handleSRPDF(viewingSR||sr)}>{pdfLoading?'Generating...':'⬇ Download PDF'}</button>
+            <button className="btn-email" onClick={()=>emailSR(viewingSR||sr)}>📧 Email Report</button>
+            <button className="btn2" onClick={()=>{setViewingSR(null);setStep('home');}}>← Home</button>
+            {!viewingSR&&<button className="btn2" onClick={()=>setStep('sr_form')}>← Edit Report</button>}
+          </div>}
+
+        </>}
+
+        {/* Bottom nav */}
+        <div className="bottom-nav">
+          <button className={`nav-btn ${tab==='inspections'?'active':''}`} onClick={()=>navTo('inspections')}>
+            <div className="nav-icon">🔍</div>
+            <div className="nav-label">Inspections</div>
           </button>
-          <button className="btn-email" onClick={()=>emailReport(viewingRecord||currentRecord())}>
-            📧 Email This Report
+          <button className={`nav-btn ${tab==='service'?'active':''}`} onClick={()=>navTo('service')}>
+            <div className="nav-icon">🔧</div>
+            <div className="nav-label">Service</div>
+            {srHistory.length>0&&<div className="nav-badge">{srHistory.length}</div>}
           </button>
-          <button className="btn2" onClick={()=>{setViewingRecord(null);setStep('home');}}>← Home</button>
-          {!viewingRecord&&<button className="btn2" onClick={()=>setStep('summary')}>← Edit Summary</button>}
-        </div>}
+        </div>
 
       </div>
     </>
