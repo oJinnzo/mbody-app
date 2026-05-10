@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import SOPTab from "./SOPTab.jsx";
+import DeliveryTab from "./DeliveryTab.jsx";
 
 const C = {
   bg:"#050a12", surface:"#0c1524", card:"#101d30", border:"#1a2e47",
@@ -76,11 +77,11 @@ const css = `
   .logo-sub{font-size:10px;color:${C.muted};letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
   .step-badge{background:${C.surface};border:1px solid ${C.border};color:${C.accent};font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;}
   .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:${C.surface};border-top:1px solid ${C.border};display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
-  .nav-btn{flex:1;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:${C.muted};transition:color .2s;position:relative;}
+  .nav-btn{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:${C.muted};transition:color .2s;position:relative;}
   .nav-btn.active{color:${C.accent};}
-  .nav-icon{font-size:20px;line-height:1;}
-  .nav-label{font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;}
-  .nav-badge{position:absolute;top:6px;right:calc(50% - 22px);background:${C.attention};color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;}
+  .nav-icon{font-size:18px;line-height:1;}
+  .nav-label{font-size:9px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;font-family:'Space Grotesk',sans-serif;}
+  .nav-badge{position:absolute;top:4px;right:calc(50% - 20px);background:${C.attention};color:#fff;border-radius:10px;font-size:8px;font-weight:700;padding:1px 4px;min-width:14px;text-align:center;}
   .content{max-width:700px;margin:0 auto;padding:20px 16px;}
   .sec{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${C.accent};margin:26px 0 10px;display:flex;align-items:center;gap:8px;}
   .sec::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,${C.accent}50,transparent);}
@@ -322,7 +323,7 @@ export default function App(){
   const outOfStockCount=inventory.filter(p=>p.qty===0).length;
   const filteredInv=inventory.filter(p=>{const mc=invFilter==='All'||p.category===invFilter||(invFilter==='Low Stock'&&p.qty<=p.lowStock);const ms=!invSearch||p.name.toLowerCase().includes(invSearch.toLowerCase())||p.partNumber.includes(invSearch);return mc&&ms;});
 
-  const stepLabel=()=>{if(tab==='service'){if(step==='sr_form')return'NEW REPORT';if(step==='sr_receipt')return'REPORT';return'SERVICE';}if(tab==='inventory')return'INVENTORY';if(tab==='sop')return'SOP';const m={home:'HOME',intake:'SETUP',sp50:'SP50',l50:'L50',summary:'SUMMARY',receipt:'REPORT'};return m[step]||'';};
+  const stepLabel=()=>{if(tab==='service'){if(step==='sr_form')return'NEW REPORT';if(step==='sr_receipt')return'REPORT';return'SERVICE';}if(tab==='inventory')return'INVENTORY';if(tab==='sop')return'SOP';if(tab==='delivery')return'DELIVERY';const m={home:'HOME',intake:'SETUP',sp50:'SP50',l50:'L50',summary:'SUMMARY',receipt:'REPORT'};return m[step]||'';};
 
   return(<>
     <style>{css}</style>
@@ -350,10 +351,13 @@ export default function App(){
 
       {tab==='sop'&&<SOPTab properties={sopProperties} setProperties={setSopProperties} showToast={showToast}/>}
 
+      {tab==='delivery'&&<DeliveryTab showToast={showToast}/>}
+
       <div className="bottom-nav">
         <button className={`nav-btn ${tab==='inspections'?'active':''}`} onClick={()=>navTo('inspections')}><div className="nav-icon">🔍</div><div className="nav-label">Inspect</div></button>
         <button className={`nav-btn ${tab==='service'?'active':''}`} onClick={()=>navTo('service')}><div className="nav-icon">🔧</div><div className="nav-label">Service</div>{srHistory.length>0&&<div className="nav-badge">{srHistory.length}</div>}</button>
-        <button className={`nav-btn ${tab==='inventory'?'active':''}`} onClick={()=>navTo('inventory')}><div className="nav-icon">📦</div><div className="nav-label">Inventory</div>{(outOfStockCount>0||lowStockCount>0)&&<div className="nav-badge">{outOfStockCount||lowStockCount}</div>}</button>
+        <button className={`nav-btn ${tab==='delivery'?'active':''}`} onClick={()=>navTo('delivery')}><div className="nav-icon">🚚</div><div className="nav-label">Delivery</div></button>
+        <button className={`nav-btn ${tab==='inventory'?'active':''}`} onClick={()=>navTo('inventory')}><div className="nav-icon">📦</div><div className="nav-label">Parts</div>{(outOfStockCount>0||lowStockCount>0)&&<div className="nav-badge">{outOfStockCount||lowStockCount}</div>}</button>
         <button className={`nav-btn ${tab==='sop'?'active':''}`} onClick={()=>navTo('sop')}><div className="nav-icon">📋</div><div className="nav-label">SOP</div>{sopProperties.length>0&&<div className="nav-badge">{sopProperties.length}</div>}</button>
       </div>
     </div>
